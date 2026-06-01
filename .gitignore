@@ -1,0 +1,15 @@
+# Secrets / local config
+config/config.php
+
+# Uploaded media (keep the folder, ignore contents)
+public/uploads/*
+!public/uploads/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Dependencies (none required, but just in case)
+/vendor/
+node_modules/
