@@ -1,0 +1,98 @@
+<!--
+  Sample CUSTOM menu template.
+  Upload this in: داشبورد > قالب و ظاهر > قالب پایه = «سفارشی» > آپلود فایل قالب.
+
+  This is exactly the format produced from a Figma design: plain HTML + CSS
+  with {{tokens}}. No PHP, no logic — the server injects menu data safely.
+  All values are pre-formatted (Persian prices, image URLs, booleans).
+-->
+<style>
+  .ct{max-width:1100px;margin:0 auto;padding:0 16px 60px;font-family:var(--font),Tahoma,sans-serif;color:var(--text)}
+  .ct-hero{background:var(--primary);color:#fff;border-radius:0 0 32px 32px;padding:54px 20px;text-align:center;background-size:cover;background-position:center}
+  .ct-hero img.logo{width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid #fff;margin-bottom:12px}
+  .ct-hero h1{font-size:2rem;margin:0;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+  .ct-hero p{opacity:.95;margin:6px 0 0}
+  .ct-sec{margin-top:34px}
+  .ct-sec > h2{font-size:1.4rem;border-right:5px solid var(--primary);padding-right:12px;margin-bottom:18px}
+  .ct-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .ct-card{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.07);display:flex;flex-direction:column}
+  .ct-card.out{opacity:.55}
+  .ct-card img{width:100%;height:160px;object-fit:cover}
+  .ct-card .body{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .ct-card h3{margin:0;font-size:1.1rem}
+  .ct-card .desc{font-size:.85rem;opacity:.7;flex:1}
+  .ct-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .ct-price{font-weight:800;color:var(--primary);font-size:1.05rem}
+  .ct-old{text-decoration:line-through;opacity:.45;font-size:.8rem;margin-left:6px}
+  .ct-badge{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:20px;background:#e74c3c;color:#fff}
+  .ct-feat{background:#f1c40f;color:#5a4500}
+  .ct-out{background:#7f8c8d;color:#fff}
+  .ct-join{display:block;max-width:420px;margin:40px auto 0;background:#fff;border-radius:18px;padding:22px;box-shadow:0 4px 18px rgba(0,0,0,.07)}
+  .ct-join h2{margin:0 0 12px;text-align:center}
+  .ct-join input{width:100%;box-sizing:border-box;margin-bottom:10px;padding:11px;border:1px solid #ddd;border-radius:10px;font-family:inherit}
+  .ct-join button{width:100%;background:var(--primary);color:#fff;border:0;padding:12px;border-radius:12px;font-weight:700;font-family:inherit;cursor:pointer}
+</style>
+
+<div class="ct">
+  <header class="ct-hero" {{#theme.hero_image}}style="background-image:linear-gradient(rgba(0,0,0,.4),rgba(0,0,0,.5)),url('{{theme.hero_image}}')"{{/theme.hero_image}}>
+    {{#theme.logo}}<img class="logo" src="{{theme.logo}}" alt="{{tenant.name}}">{{/theme.logo}}
+    <h1>{{theme.hero_title}}</h1>
+    {{#theme.hero_subtitle}}<p>{{theme.hero_subtitle}}</p>{{/theme.hero_subtitle}}
+  </header>
+
+  {{#has_popular}}
+  <section class="ct-sec">
+    <h2>⭐ پرطرفدارها</h2>
+    <div class="ct-grid">
+      {{#popular}}
+      <article class="ct-card {{#sold_out}}out{{/sold_out}}">
+        {{#image}}<img src="{{image}}" alt="{{name}}">{{/image}}
+        <div class="body">
+          <h3>{{name}}</h3>
+          <div class="desc">{{description}}</div>
+          <div class="ct-row">
+            <span class="ct-price">{{#has_discount}}<span class="ct-old">{{old_price}}</span>{{/has_discount}}{{price}} {{currency}}</span>
+            {{#has_discount}}<span class="ct-badge">{{discount_label}}</span>{{/has_discount}}
+          </div>
+        </div>
+      </article>
+      {{/popular}}
+    </div>
+  </section>
+  {{/has_popular}}
+
+  {{#categories}}
+  <section class="ct-sec">
+    <h2>{{name}}</h2>
+    <div class="ct-grid">
+      {{#items}}
+      <article class="ct-card {{#sold_out}}out{{/sold_out}}">
+        {{#image}}<img src="{{image}}" alt="{{name}}">{{/image}}
+        <div class="body">
+          <div class="ct-row">
+            <h3>{{name}}</h3>
+            {{#featured}}<span class="ct-badge ct-feat">ویژه</span>{{/featured}}
+          </div>
+          <div class="desc">{{description}}</div>
+          <div class="ct-row">
+            <span class="ct-price">{{#has_discount}}<span class="ct-old">{{old_price}}</span>{{/has_discount}}{{price}} {{currency}}</span>
+            {{#has_discount}}<span class="ct-badge">{{discount_label}}</span>{{/has_discount}}
+            {{^available}}<span class="ct-badge ct-out">ناموجود</span>{{/available}}
+          </div>
+        </div>
+      </article>
+      {{/items}}
+    </div>
+  </section>
+  {{/categories}}
+
+  <form class="ct-join" method="post" action="{{register_action}}">
+    <h2>عضویت در باشگاه مشتریان</h2>
+    <input type="hidden" name="_csrf" value="{{csrf}}">
+    <input name="first_name" placeholder="نام" required>
+    <input name="last_name" placeholder="نام خانوادگی">
+    <input name="phone" inputmode="numeric" placeholder="شماره موبایل" required>
+    <input type="date" name="birthdate">
+    <button type="submit">ثبت‌نام</button>
+  </form>
+</div>
