@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Core\Database;
+use App\Core\TemplateEngine;
 use App\Core\View;
 use App\Services\PricingService;
 use App\Services\RankingService;
@@ -53,6 +54,17 @@ class PublicController
 
         $popular = RankingService::popularItems((int) $tenant['id'], 8);
 
+        // Fully custom (uploaded) template -> render via the safe engine.
+        if (($theme['template'] ?? '') === 'custom' && !empty($theme['custom_html'])) {
+            $context = $this->buildContext($tenant, $theme, $categories, $byCat, $popular, $slug);
+            $rendered = TemplateEngine::render($theme['custom_html'], $context);
+            View::render('public/custom', [
+                'theme'    => $theme,
+                'rendered' => $rendered,
+            ], 'public');
+            return;
+        }
+
         View::render('public/menu', [
             'tenant'     => $tenant,
             'theme'      => $theme,
@@ -61,6 +73,77 @@ class PublicController
             'items'      => $items,
             'popular'    => $popular,
         ], 'public');
+    }
+
+    /**
+     * Build the token context handed to a custom template. Everything is
+     * pre-formatted (Persian prices, image URLs, booleans) so the designer
+     * only places tokens — no logic needed in the template.
+     */
+    private function buildContext(array $tenant, array $theme, array $categories, array $byCat, array $popular, string $slug): array
+    {
+        $currency = $tenant['currency'] ?: 'تومان';
+
+        $mapItem = function (array $it) use ($currency): array {
+            $hasDiscount = !empty($it['discount']);
+            $final = (int) ($it['final_price'] ?? $it['price']);
+            $ratingCount = (int) ($it['rating_count'] ?? 0);
+            $rating = $ratingCount > 0 ? round(($it['rating_sum'] ?? 0) / $ratingCount, 1) : 0;
+            return [
+                'id'             => (int) $it['id'],
+                'name'           => $it['name'],
+                'description'    => $it['description'] ?? '',
+                'image'          => !empty($it['image_path']) ? url($it['image_path']) : '',
+                'price'          => money($final),
+                'old_price'      => $hasDiscount ? money($it['price']) : '',
+                'has_discount'   => $hasDiscount,
+                'discount_label' => $hasDiscount
+                    ? ($it['discount']['type'] === 'percent'
+                        ? fa_digits((string) $it['discount']['value']) . '٪'
+                        : 'تخفیف')
+                    : '',
+                'currency'       => $currency,
+                'available'      => (bool) $it['is_available'],
+                'sold_out'       => !$it['is_available'],
+                'featured'       => !empty($it['is_featured']),
+                'rating'         => $rating ? fa_digits((string) $rating) : '',
+                'rating_count'   => $ratingCount ? fa_digits((string) $ratingCount) : '',
+            ];
+        };
+
+        $cats = [];
+        foreach ($categories as $c) {
+            $list = array_map($mapItem, $byCat[(int) $c['id']] ?? []);
+            if (!$list) {
+                continue;
+            }
+            $cats[] = ['id' => (int) $c['id'], 'name' => $c['name'], 'items' => $list];
+        }
+
+        $pop = array_map($mapItem, $popular);
+
+        return [
+            'currency' => $currency,
+            'slug'     => $slug,
+            'csrf'     => csrf_token(),
+            'register_action' => url('m/' . $slug . '/register'),
+            'survey_url'      => url('m/' . $slug . '/survey'),
+            'tenant'   => [
+                'name'    => $tenant['name'],
+                'phone'   => $tenant['phone'] ?? '',
+                'address' => $tenant['address'] ?? '',
+                'currency' => $currency,
+            ],
+            'theme'    => [
+                'logo'          => !empty($theme['logo_path']) ? url($theme['logo_path']) : '',
+                'hero_image'    => !empty($theme['hero_image']) ? url($theme['hero_image']) : '',
+                'hero_title'    => $theme['hero_title'] ?: $tenant['name'],
+                'hero_subtitle' => $theme['hero_subtitle'] ?? '',
+            ],
+            'has_popular' => count($pop) > 0,
+            'popular'     => $pop,
+            'categories'  => $cats,
+        ];
     }
 
     public function register(string $slug): void

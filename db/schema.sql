@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS themes (
   hero_title      VARCHAR(150) DEFAULT NULL,
   hero_subtitle   VARCHAR(255) DEFAULT NULL,
   custom_css      TEXT         DEFAULT NULL,
+  custom_html     LONGTEXT     DEFAULT NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uniq_theme_tenant (tenant_id),
   CONSTRAINT fk_theme_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE

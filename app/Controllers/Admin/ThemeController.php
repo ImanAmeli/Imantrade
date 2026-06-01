@@ -6,7 +6,7 @@ use App\Core\Upload;
 
 class ThemeController extends AdminController
 {
-    private const TEMPLATES = ['classic', 'modern', 'elegant', 'dark'];
+    private const TEMPLATES = ['classic', 'modern', 'elegant', 'dark', 'custom'];
 
     public function index(): void
     {
@@ -28,9 +28,21 @@ class ThemeController extends AdminController
         $logo = Upload::image('logo', $this->tenantId) ?? ($theme['logo_path'] ?? null);
         $hero = Upload::image('hero', $this->tenantId) ?? ($theme['hero_image'] ?? null);
 
+        // Custom template HTML: either an uploaded .html file or the textarea.
+        $customHtml = $theme['custom_html'] ?? null;
+        if (!empty($_FILES['custom_html_file']['tmp_name']) && $_FILES['custom_html_file']['error'] === UPLOAD_ERR_OK) {
+            $uploaded = file_get_contents($_FILES['custom_html_file']['tmp_name']);
+            if ($uploaded !== false && strlen($uploaded) <= 200_000) {
+                $customHtml = $uploaded;
+            }
+        } elseif (isset($_POST['custom_html'])) {
+            $customHtml = $_POST['custom_html'] !== '' ? $_POST['custom_html'] : null;
+        }
+        $customHtml = $this->sanitizeTemplate($customHtml);
+
         Database::run(
             'UPDATE themes SET template=?, primary_color=?, secondary_color=?, bg_color=?, text_color=?,
-                    font_family=?, logo_path=?, hero_image=?, hero_title=?, hero_subtitle=?, custom_css=?
+                    font_family=?, logo_path=?, hero_image=?, hero_title=?, hero_subtitle=?, custom_css=?, custom_html=?
              WHERE tenant_id=?',
             [
                 $template,
@@ -43,11 +55,26 @@ class ThemeController extends AdminController
                 trim($_POST['hero_title'] ?? ''),
                 trim($_POST['hero_subtitle'] ?? ''),
                 mb_substr(trim($_POST['custom_css'] ?? ''), 0, 5000),
+                $customHtml,
                 $this->tenantId,
             ]
         );
         flash('success', 'قالب ذخیره شد.');
         redirect('admin/theme');
+    }
+
+    /**
+     * Defensive sanitisation for the uploaded template. The TemplateEngine
+     * never executes code, but we still strip PHP open tags so the markup
+     * can never be interpreted as PHP if mishandled elsewhere.
+     */
+    private function sanitizeTemplate(?string $html): ?string
+    {
+        if ($html === null || trim($html) === '') {
+            return null;
+        }
+        $html = str_replace(['<?php', '<?=', '<?', '?>'], '', $html);
+        return $html;
     }
 
     private function color(string $v): string
