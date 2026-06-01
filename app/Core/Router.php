@@ -9,17 +9,17 @@ class Router
     /** @var array<int,array{method:string,pattern:string,handler:callable}> */
     private array $routes = [];
 
-    public function get(string $pattern, callable $handler): void
+    public function get(string $pattern, callable|array $handler): void
     {
         $this->add('GET', $pattern, $handler);
     }
 
-    public function post(string $pattern, callable $handler): void
+    public function post(string $pattern, callable|array $handler): void
     {
         $this->add('POST', $pattern, $handler);
     }
 
-    private function add(string $method, string $pattern, callable $handler): void
+    private function add(string $method, string $pattern, callable|array $handler): void
     {
         $this->routes[] = compact('method', 'pattern', 'handler');
     }
@@ -41,7 +41,14 @@ class Router
             $regex = $this->toRegex($route['pattern']);
             if (preg_match($regex, $path, $m)) {
                 $params = array_filter($m, 'is_string', ARRAY_FILTER_USE_KEY);
-                call_user_func_array($route['handler'], array_values($params));
+                $handler = $route['handler'];
+                // Lazy controller instantiation: [Controller::class, 'method'].
+                // This ensures constructors (e.g. auth guards) run ONLY for the
+                // matched route, not for every route at registration time.
+                if (is_array($handler) && is_string($handler[0])) {
+                    $handler = [new $handler[0](), $handler[1]];
+                }
+                call_user_func_array($handler, array_values($params));
                 return;
             }
         }

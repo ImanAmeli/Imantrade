@@ -27,7 +27,7 @@ $renderItem = function (array $it) use ($currency, $slug) {
                         <span class="new"><?= money($it['final_price']) ?> <?= e($currency) ?></span>
                         <span class="badge off">
                             <?= $it['discount']['type'] === 'percent'
-                                ? e($it['discount']['value']) . '٪'
+                                ? fa_digits((string) $it['discount']['value']) . '٪'
                                 : 'تخفیف' ?>
                         </span>
                     <?php else: ?>
