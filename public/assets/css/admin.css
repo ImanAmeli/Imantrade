@@ -97,6 +97,10 @@ fieldset.days legend{font-size:.82rem;color:#8895a7;padding:0 6px}
 .disc-row strong{display:block}.disc-row small{display:block}
 .disc-actions{display:flex;gap:6px}.disc-actions form{display:inline}
 
+/* ---- webhook box ---- */
+.hook-box{margin-top:14px;padding:12px;background:#f7f9fc;border:1px dashed #d7deea;border-radius:10px}
+.hook-url{display:block;word-break:break-all;background:#1f2a37;color:#9fe0b6;padding:8px 10px;border-radius:8px;font-size:.78rem;margin:6px 0;direction:ltr;text-align:left}
+
 /* ---- tiers ---- */
 .tier{padding:3px 10px;border-radius:20px;font-size:.74rem;font-weight:700}
 .t-platinum{background:#e8eaf6;color:#3949ab}.t-gold{background:#fff6da;color:#b8860b}

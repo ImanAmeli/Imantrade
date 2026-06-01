@@ -135,6 +135,33 @@ if (!function_exists('age_from')) {
     }
 }
 
+if (!function_exists('normalize_ir_phone')) {
+    /**
+     * Normalise an Iranian mobile number to canonical 09xxxxxxxxx form.
+     * Accepts inputs like +98912..., 0098912..., 98912..., 9121234567,
+     * 0912... and Persian/Arabic digits. Returns null if not a mobile.
+     */
+    function normalize_ir_phone(string $raw): ?string
+    {
+        // Persian/Arabic digits -> ASCII
+        $map = ['۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9',
+                '٠'=>'0','١'=>'1','٢'=>'2','٣'=>'3','٤'=>'4','٥'=>'5','٦'=>'6','٧'=>'7','٨'=>'8','٩'=>'9'];
+        $d = preg_replace('/\D+/', '', strtr($raw, $map));
+        if ($d === '') {
+            return null;
+        }
+        if (str_starts_with($d, '0098')) {
+            $d = substr($d, 4);
+        } elseif (str_starts_with($d, '98') && strlen($d) === 12) {
+            $d = substr($d, 2);
+        }
+        if (strlen($d) === 10 && $d[0] === '9') {
+            $d = '0' . $d;
+        }
+        return preg_match('/^09\d{9}$/', $d) ? $d : null;
+    }
+}
+
 if (!function_exists('csrf_token')) {
     function csrf_token(): string
     {

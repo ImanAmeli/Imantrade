@@ -40,6 +40,19 @@ $providers = [
             <label class="chk"><input type="checkbox" name="is_active" <?= $data['is_active'] ? 'checked' : '' ?>> فعال باشد</label>
             <button class="btn-primary">ذخیره</button>
         </form>
+
+        <?php if (in_array($ch, ['telegram', 'bale'], true) && !empty($data['config']['webhook_secret'])): ?>
+            <?php $hook = $webhookBase . '/bot/' . $ch . '/' . $tenantId . '/' . $data['config']['webhook_secret']; ?>
+            <div class="hook-box">
+                <small class="muted">آدرس وب‌هوک (محرمانه):</small>
+                <code class="hook-url"><?= e($hook) ?></code>
+                <form method="post" action="<?= url('admin/integrations/' . $ch . '/set-webhook') ?>" style="margin-top:8px">
+                    <?= csrf_field() ?>
+                    <button class="btn-sm">ثبت خودکار وب‌هوک روی ربات</button>
+                </form>
+                <small class="muted">پس از ذخیره‌ی توکن، این دکمه را بزنید تا ربات به سیستم وصل شود.</small>
+            </div>
+        <?php endif; ?>
     </div>
 <?php endforeach; ?>
 </div>

@@ -8,6 +8,7 @@ require __DIR__ . '/../app/bootstrap.php';
 
 use App\Core\Router;
 use App\Controllers\PublicController;
+use App\Controllers\BotController;
 use App\Controllers\Admin\AuthController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\CategoryController;
@@ -29,6 +30,9 @@ $router->post('/m/{slug}/register', [new PublicController(), 'register']);
 $router->post('/m/{slug}/rate', [new PublicController(), 'rate']);
 $router->get('/m/{slug}/survey', [new PublicController(), 'survey']);
 $router->post('/m/{slug}/survey', [new PublicController(), 'submitSurvey']);
+
+// -------- Bot webhooks (Telegram / Bale) --------
+$router->post('/bot/{channel}/{tenant}/{secret}', [new BotController(), 'webhook']);
 
 // -------- Admin auth --------
 $router->get('/admin/login', [new AuthController(), 'showLogin']);
@@ -74,6 +78,7 @@ $router->post('/admin/surveys/{id}/delete', [new SurveyController(), 'destroy'])
 $router->post('/admin/surveys/seed', [new SurveyController(), 'seedDefaults']);
 
 $router->get('/admin/integrations', [new IntegrationController(), 'index']);
+$router->post('/admin/integrations/{channel}/set-webhook', [new IntegrationController(), 'setWebhook']);
 $router->post('/admin/integrations/{channel}', [new IntegrationController(), 'save']);
 
 $router->get('/admin/theme', [new ThemeController(), 'index']);

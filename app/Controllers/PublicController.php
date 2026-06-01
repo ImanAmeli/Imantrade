@@ -72,11 +72,11 @@ class PublicController
 
         $first = trim($_POST['first_name'] ?? '');
         $last  = trim($_POST['last_name'] ?? '');
-        $phone = preg_replace('/\s+/', '', $_POST['phone'] ?? '');
+        $phone = normalize_ir_phone($_POST['phone'] ?? '');
         $birth = $_POST['birthdate'] ?? '';
         $birth = $birth !== '' ? $birth : null;
 
-        if ($first === '' || !preg_match('/^0?9\d{9}$/', (string) $phone)) {
+        if ($first === '' || $phone === null) {
             flash('error', 'نام و شماره موبایل معتبر الزامی است.');
             redirect("m/{$slug}");
         }

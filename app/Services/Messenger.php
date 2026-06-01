@@ -35,15 +35,23 @@ class Messenger
         $status = 'queued';
         $error  = null;
 
+        // resolve a better recipient label for logging (chat id for bots)
+        if ($channel === 'telegram') {
+            $recipient = $customer['telegram_chat_id'] ?? $recipient;
+        } elseif ($channel === 'bale') {
+            $recipient = $customer['bale_chat_id'] ?? $recipient;
+        }
+
         if ($integration['is_active'] && !empty($integration['config'])) {
             try {
+                // null => not deliverable yet (queued), true => sent, false => failed
                 $ok = match ($channel) {
                     'sms'      => self::sendSms($integration, $recipient, $body),
-                    'telegram' => self::sendTelegram($integration, $customer, $body),
-                    'bale'     => self::sendBale($integration, $customer, $body),
+                    'telegram' => self::sendBot('telegram', $integration, $customer, $body),
+                    'bale'     => self::sendBot('bale', $integration, $customer, $body),
                     default    => false,
                 };
-                $status = $ok ? 'sent' : 'failed';
+                $status = $ok === null ? 'queued' : ($ok ? 'sent' : 'failed');
             } catch (\Throwable $ex) {
                 $status = 'failed';
                 $error  = mb_substr($ex->getMessage(), 0, 250);
@@ -60,7 +68,8 @@ class Messenger
 
     // --- Provider adapters (real HTTP guarded by config) ---
 
-    private static function sendSms(array $integration, string $to, string $body): bool
+    /** @return bool|null  null when no provider is wired yet (queued) */
+    private static function sendSms(array $integration, string $to, string $body): ?bool
     {
         $cfg = $integration['config'];
         // Example for Kavenegar; adapt to your panel (Melipayamak, SMS.ir...).
@@ -73,37 +82,21 @@ class Messenger
             ]);
             return self::httpPost($url, $payload, []);
         }
-        // Unknown provider -> treat as queued (return true, logged as queued upstream)
-        return true;
+        // No supported provider wired yet -> log as queued, not failed.
+        return null;
     }
 
-    private static function sendTelegram(array $integration, array $customer, string $body): bool
+    /** @return bool|null  null when not deliverable yet (no chat id) */
+    private static function sendBot(string $channel, array $integration, array $customer, string $body): ?bool
     {
         $cfg = $integration['config'];
-        $chatId = $customer['telegram_chat_id'] ?? ($cfg['default_chat_id'] ?? null);
+        $field = $channel === 'bale' ? 'bale_chat_id' : 'telegram_chat_id';
+        $chatId = $customer[$field] ?? ($cfg['default_chat_id'] ?? null);
         if (empty($cfg['bot_token']) || empty($chatId)) {
-            return true; // queued: no chat id yet (collected when user starts the bot)
+            return null; // customer hasn't linked the bot yet -> queued
         }
-        $url = "https://api.telegram.org/bot{$cfg['bot_token']}/sendMessage";
-        return self::httpPost($url, json_encode([
-            'chat_id' => $chatId,
-            'text'    => $body,
-        ], JSON_UNESCAPED_UNICODE), ['Content-Type: application/json']);
-    }
-
-    private static function sendBale(array $integration, array $customer, string $body): bool
-    {
-        $cfg = $integration['config'];
-        $chatId = $customer['bale_chat_id'] ?? ($cfg['default_chat_id'] ?? null);
-        if (empty($cfg['bot_token']) || empty($chatId)) {
-            return true;
-        }
-        // Bale exposes a Telegram-compatible bot API.
-        $url = "https://tapi.bale.ai/bot{$cfg['bot_token']}/sendMessage";
-        return self::httpPost($url, json_encode([
-            'chat_id' => $chatId,
-            'text'    => $body,
-        ], JSON_UNESCAPED_UNICODE), ['Content-Type: application/json']);
+        $res = BotService::sendMessage($channel, $cfg['bot_token'], $chatId, $body);
+        return !empty($res['ok']);
     }
 
     private static function httpPost(string $url, string $body, array $headers): bool
